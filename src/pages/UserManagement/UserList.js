@@ -10,67 +10,137 @@ import {
   ModalBody,
   ModalFooter,
   Input,
+  Row,
+  Col,
 } from "reactstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import axios from "axios";
 
+// Import react-toastify components and CSS
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 const API_URL = "http://localhost:8080/api/users";
+
+// Configuration for success/error toasts
+const toastConfig = {
+    position: "top-right",
+    autoClose: 3000,
+    hideProgressBar: true,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    closeButton: false,
+    progress: undefined,
+};
+
+// --- HELPER FUNCTIONS FOR BADGE RENDERING ---
+const getRoleBadge = (role) => {
+  if (!role) return <span className="badge bg-secondary-subtle text-secondary">N/A</span>;
+  const badgeMap = {
+    'ADMIN': { bg: 'bg-danger-subtle', text: 'text-danger' },
+    'BOSS': { bg: 'bg-primary-subtle', text: 'text-primary' },
+    'LEADER': { bg: 'bg-info-subtle', text: 'text-info' },
+    'PROGRAMMER': { bg: 'bg-success-subtle', text: 'text-success' },
+    'DEFAULT': { bg: 'bg-secondary-subtle', text: 'text-secondary' }, 
+  };
+  const { bg, text } = badgeMap[role] || badgeMap['DEFAULT'];
+  return (
+    <span className={`badge ${bg} ${text} text-uppercase`}>
+      {role.toLowerCase()}
+    </span>
+  );
+};
+
+const getStatusBadge = (status) => {
+  if (!status) return <span className="badge rounded-pill border bg-secondary"><i className="mdi mdi-circle-medium"></i> N/A</span>;
+  const badgeMap = {
+    'ACTIVE': 'success',
+    'DEACTIVATE': 'danger',
+    'DEFAULT': 'secondary',
+  };
+  const bgClass = badgeMap[status] || badgeMap['DEFAULT'];
+  return (
+    <span className={`badge rounded-pill border border-${bgClass} text-${bgClass}`}>
+     {status}
+    </span>
+
+  );
+};
+
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
   const [form, setForm] = useState({
     name: "",
     email: "",
-    role: "",
+    role: "PROGRAMMER", 
+    status: "ACTIVE",  
+    phoneNumber: "",
   });
 
-  // Alert state for rounded-label alert
-  const [alert, setAlert] = useState({
-    visible: false,
-    type: "success", // "success" | "danger"
-    message: "",
-  });
+  const formatDateTime = (dateTime) => {
+    if (!dateTime) return "N/A";
+    const date = new Date(dateTime);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
 
-  const showSuccessAlert = (msg) =>
-    setAlert({ visible: true, type: "success", message: msg });
+  // Toast functions
+  const showSuccessToast = (msg) =>
+    toast.success(msg, {
+        ...toastConfig,
+        className: 'bg-success text-white',
+        icon: <i className="ri-check-double-line align-middle me-2"></i>
+    });
 
-  const showErrorAlert = (msg) =>
-    setAlert({ visible: true, type: "danger", message: msg });
+  const showErrorToast = (msg) =>
+    toast.error(msg, {
+        ...toastConfig,
+        className: 'bg-danger text-white',
+        icon: <i className="ri-error-warning-line align-middle me-2"></i>
+    });
 
   // ---------------- LOAD USERS ----------------
   const loadUsers = async () => {
     try {
       const res = await axios.get(API_URL);
-      console.log("Loaded users:", res.data);
-      setUsers(res.data);
+      // Safely access data, fallback to empty array if not present
+      setUsers(res.data || []);
     } catch (err) {
       console.error("API error:", err);
-      showErrorAlert("Unable to fetch users from backend.");
+      showErrorToast(`Load Error: ${err.message || "Unable to fetch users from backend."}`);
     }
   };
+  
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  // ---------------- ADD USER ----------------
+  // ---------------- ADD / EDIT USER ----------------
   const openAdd = () => {
     setSelectedUser(null);
-    setForm({ name: "", email: "", role: "" });
+    setForm({ 
+        name: "", 
+        email: "", 
+        role: "PROGRAMMER", 
+        status: "ACTIVE", 
+        phoneNumber: "" 
+    });
     setModalOpen(true);
   };
 
-  // ---------------- EDIT USER ----------------
   const openEdit = (u) => {
     setSelectedUser(u);
     setForm({
       name: u.name ?? "",
       email: u.email ?? "",
-      role: u.role ?? "",
+      role: u.role ?? "PROGRAMMER",
+      status: u.status ?? "ACTIVE",
+      phoneNumber: u.phoneNumber ?? "",
     });
     setModalOpen(true);
   };
@@ -78,21 +148,41 @@ const UserList = () => {
   // ---------------- SAVE USER ----------------
   const saveUser = async () => {
     try {
-      let message = "";
+      let res;
       if (selectedUser) {
-        await axios.put(`${API_URL}/${selectedUser.id}`, form);
-        message = "User updated successfully!";
+        const updateData = {
+            name: form.name,
+            email: form.email,
+            role: form.role,
+            status: form.status,
+            phoneNumber: form.phoneNumber,
+        };
+        res = await axios.put(`${API_URL}/${selectedUser.id}`, updateData);
       } else {
-        await axios.post(API_URL, form);
-        message = "New user added successfully!";
+        res = await axios.post(API_URL, form);
       }
-
+      
       setModalOpen(false);
-      showSuccessAlert(message);
+      // Use the success message from the response body
+      showSuccessToast(res.msg); 
       loadUsers();
     } catch (e) {
-      console.error("Save error:", e);
-      showErrorAlert("Failed to save user.");
+        console.error("Full Error Object:", e); 
+
+        let errorMessage = "Failed to save user. Please check your inputs.";
+        
+        if (e.response && e.response.data) {
+            // Priority 1: Specific validation error message (from @ExceptionHandler 400)
+            if (e.response.data.error) {
+                errorMessage = e.response.data.error; 
+            } 
+            // Priority 2: General message (from 404, etc., returned by controller helper)
+            else if (e.response.data.msg) {
+                errorMessage = e.response.data.msg;
+            }
+        }
+        
+        showErrorToast(errorMessage);
     }
   };
 
@@ -104,13 +194,20 @@ const UserList = () => {
 
   const deleteUser = async () => {
     try {
-      await axios.delete(`${API_URL}/${selectedUser.id}`);
+      const res = await axios.delete(`${API_URL}/${selectedUser.id}`);
       setDeleteModal(false);
-      showSuccessAlert(`User '${selectedUser?.name}' deleted successfully!`);
+      // Use the success message from the response body
+      showSuccessToast(res.msg); 
       loadUsers();
     } catch (e) {
       console.error("Delete error:", e);
-      showErrorAlert("Failed to delete user.");
+      let errorMessage = "Failed to delete user.";
+      
+      if (e.response && e.response.data && e.response.data.msg) {
+          // Use the message field (e.g., "User not found or already soft-deleted.")
+          errorMessage = e.response.data.msg;
+      }
+      showErrorToast(errorMessage);
     }
   };
 
@@ -118,33 +215,7 @@ const UserList = () => {
     <div className="page-content">
       <Container fluid>
         <BreadCrumb title="User Management" pageTitle="Users" />
-
-        {/* Rounded label alert (your template style) */}
-        {alert.visible && (
-          <div
-            className={`alert alert-${alert.type} alert-dismissible alert-label-icon rounded-label fade show`}
-            role="alert"
-          >
-            <i
-                className={`${
-                    alert.type === "success"
-                    ? "ri-check-double-line"
-                    : "ri-error-warning-line"
-                } label-icon`}
-            ></i>
-            <strong>
-              {alert.type === "success" ? "Success" : "Error"}
-            </strong>{" "}
-            - {alert.message}
-            <button
-              type="button"
-              className="btn-close"
-              aria-label="Close"
-              onClick={() => setAlert({ ...alert, visible: false })}
-            ></button>
-          </div>
-        )}
-
+        
         <Card>
           <CardHeader>
             <h4 className="card-title mb-0">Users</h4>
@@ -161,7 +232,11 @@ const UserList = () => {
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Role</th>
+                    <th>Role</th> 
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Created By / Time</th>
+                    <th>Last Updated</th>
                     <th width="140px">Action</th>
                   </tr>
                 </thead>
@@ -173,7 +248,17 @@ const UserList = () => {
                         <td>{u.id}</td>
                         <td>{u.name}</td>
                         <td>{u.email}</td>
-                        <td>{u.role}</td>
+                        <td>{getRoleBadge(u.role)}</td> 
+                        <td>{u.phoneNumber || 'N/A'}</td>
+                        <td>{getStatusBadge(u.status)}</td>
+                        <td>
+                            {u.createdBy || 'N/A'}
+                            <br/><small className="text-muted">{formatDateTime(u.createTime)}</small>
+                        </td>
+                        <td>
+                            {u.updatedBy || 'N/A'}
+                            <br/><small className="text-muted">{formatDateTime(u.updateTime)}</small>
+                        </td>
                         <td>
                           <div className="d-flex gap-2">
                             <Button
@@ -196,7 +281,7 @@ const UserList = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center text-muted">
+                      <td colSpan="9" className="text-center text-muted">
                         No users found.
                       </td>
                     </tr>
@@ -213,24 +298,64 @@ const UserList = () => {
             {selectedUser ? "Edit User" : "Add User"}
           </ModalHeader>
           <ModalBody>
-            <label>Name</label>
+            <Row>
+                <Col md={6}>
+                    <label>Name</label>
+                    <Input
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    />
+                </Col>
+                <Col md={6}>
+                    <label>Email</label>
+                    <Input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    />
+                </Col>
+            </Row>
+
+            <label className="mt-3">Phone Number</label>
             <Input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              type="tel"
+              value={form.phoneNumber}
+              onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
             />
 
-            <label className="mt-3">Email</label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
+            <Row className="mt-3">
+                <Col md={6}>
+                    <label>Role</label>
+                    <Input
+                      type="select"
+                      value={form.role}
+                      onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    >
+                        <option value="ADMIN">Admin</option>
+                        <option value="BOSS">Boss</option>
+                        <option value="LEADER">Leader</option>
+                        <option value="PROGRAMMER">Programmer</option>
+                    </Input>
+                </Col>
+                <Col md={6}>
+                    <label>Status</label>
+                    <Input
+                      type="select"
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    >
+                        <option value="ACTIVE">Active</option>
+                        <option value="DEACTIVATE">Deactivate</option>
+                    </Input>
+                </Col>
+            </Row>
 
-            <label className="mt-3">Role</label>
-            <Input
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-            />
+            {selectedUser && (
+                <div className="mt-3 border-top pt-3">
+                    <p className="mb-1 text-muted"><small>Created By: <b>{selectedUser.createdBy}</b> on {formatDateTime(selectedUser.createTime)}</small></p>
+                    {selectedUser.updatedBy && <p className="mb-0 text-muted"><small>Last Updated By: <b>{selectedUser.updatedBy}</b> on {formatDateTime(selectedUser.updateTime)}</small></p>}
+                </div>
+            )}
           </ModalBody>
 
           <ModalFooter>
@@ -238,27 +363,29 @@ const UserList = () => {
               Close
             </Button>
             <Button color="success" onClick={saveUser}>
-              Save
+              {selectedUser ? "Update" : "Save"}
             </Button>
           </ModalFooter>
         </Modal>
 
         {/* ---------------- DELETE MODAL ---------------- */}
         <Modal isOpen={deleteModal} toggle={() => setDeleteModal(false)}>
-          <ModalHeader>Are you sure?</ModalHeader>
+          <ModalHeader>Confirm Soft Delete</ModalHeader>
           <ModalBody>
-            Delete user <b>{selectedUser?.name}</b> ?
+            Are you sure you want to **soft-delete** user <b>{selectedUser?.name}</b>? The user will be deactivated but remain in the database.
           </ModalBody>
           <ModalFooter>
             <Button color="light" onClick={() => setDeleteModal(false)}>
               Cancel
             </Button>
             <Button color="danger" onClick={deleteUser}>
-              Delete
+              Confirm Soft Delete
             </Button>
           </ModalFooter>
         </Modal>
       </Container>
+      
+      <ToastContainer /> 
     </div>
   );
 };

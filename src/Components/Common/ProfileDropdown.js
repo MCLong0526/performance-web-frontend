@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap';
 import { Link } from 'react-router-dom';
+import { toast } from "react-toastify";
+
 
 
 //import images
@@ -96,7 +98,7 @@ const ProfileDropdown = () => {
                         </Link>
                     </DropdownItem> */}
                     <DropdownItem className='p-0'>
-                        <Link to= "/logout" className="dropdown-item">
+                        <Link to="/logout" className="dropdown-item">
                             <i
                                 className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span
                                     className="align-middle" data-key="t-logout">Logout</span>
