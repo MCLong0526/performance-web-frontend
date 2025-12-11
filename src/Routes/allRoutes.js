@@ -183,11 +183,7 @@ import BasicPasswCreate from "../pages/AuthenticationInner/PasswordCreate/BasicP
 import CoverPasswCreate from "../pages/AuthenticationInner/PasswordCreate/CoverPasswCreate";
 import Offlinepage from "../pages/AuthenticationInner/Errors/Offlinepage";
 
-//login
-import Login from "../pages/Authentication/Login";
 import ForgetPasswordPage from "../pages/Authentication/ForgetPassword";
-import Logout from "../pages/Authentication/Logout";
-import Register from "../pages/Authentication/Register";
 
 //Charts
 import LineCharts from "../pages/Charts/ApexCharts/LineCharts";
@@ -245,6 +241,12 @@ import BlogListView from "../pages/Pages/Blogs/ListView";
 import BlogGridView from "../pages/Pages/Blogs/GridView";
 import PageBlogOverview from "../pages/Pages/Blogs/Overview";
 import UserList from "../pages/UserManagement/UserList";
+
+import ProtectedRoute from "../Routes/Auth/ProtectedRoute";
+//custom 
+import CustomLogin from "../pages/CustomAuth/CustomLogin";
+import CustomRegister from "../pages/CustomAuth/CustomRegister";
+import CustomLogout from "../pages/CustomAuth/CustomLogout";
 
 const authProtectedRoutes = [
   { path: "/dashboard-analytics", component: <DashboardAnalytics /> },
@@ -454,10 +456,10 @@ const authProtectedRoutes = [
   //User Profile
   { path: "/profile", component: <UserProfile /> },
 
-  //start here
+  //custom page
   {
     path: "/users",
-    component: <UserList />,
+    component: <UserList />
   }, 
 
   // this route should be at the end of all other routes
@@ -476,10 +478,8 @@ const authProtectedRoutes = [
 
 const publicRoutes = [
   // Authentication Page
-  { path: "/logout", component: <Logout /> },
-  { path: "/login", component: <Login /> },
   { path: "/forgot-password", component: <ForgetPasswordPage /> },
-  { path: "/register", component: <Register /> },
+  // { path: "/register", component: <Register /> },
   { path: "/dashboard", component: <DashboardProject /> },
   
 
@@ -513,6 +513,12 @@ const publicRoutes = [
   { path: "/auth-pass-change-cover", component: <CoverPasswCreate /> },
   { path: "/auth-offline", component: <Offlinepage /> },
 
+
+  // Customlogin
+  { path: "/login", component: <CustomLogin /> },
+  { path: "/register", component: <CustomRegister />},
+  { path: "/logout", component: <CustomLogout /> },
+  
 
 ];
 
