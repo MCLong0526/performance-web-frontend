@@ -10,12 +10,12 @@ import { toast } from "react-toastify";
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import { createSelector } from 'reselect';
 
-const ProfileDropdown = () => {
+const profiledropdownData = createSelector(
+    (state) => state.Profile,
+    (user) => user.user
+);
 
-    const profiledropdownData = createSelector(
-        (state) => state.Profile,
-        (user) => user.user
-      );
+const ProfileDropdown = () => {
     // Inside your component
     const user = useSelector(profiledropdownData);
 
@@ -29,7 +29,7 @@ const ProfileDropdown = () => {
             );
         }
     }, [userName, user]);
-    
+
     //Dropdown Toggle
     const [isProfileDropdown, setIsProfileDropdown] = useState(false);
     const toggleProfileDropdown = () => {
@@ -51,13 +51,13 @@ const ProfileDropdown = () => {
                 <DropdownMenu className="dropdown-menu-end">
                     <h6 className="dropdown-header">Welcome {userName}!</h6>
                     <DropdownItem className='p-0'>
-                        <Link to= "/profile" className="dropdown-item">
+                        <Link to="/profile" className="dropdown-item">
                             <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
                             <span className="align-middle">Profile</span>
                         </Link>
                     </DropdownItem>
                     <DropdownItem className='p-0'>
-                        <Link to= "/apps-chat" className="dropdown-item">
+                        <Link to="/apps-chat" className="dropdown-item">
                             <i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i> <span
                                 className="align-middle">Messages</span>
                         </Link>
@@ -84,7 +84,7 @@ const ProfileDropdown = () => {
                         </Link>
                     </DropdownItem > */}
                     <DropdownItem className='p-0'>
-                        <Link to= "/pages-profile-settings" className="dropdown-item">
+                        <Link to="/pages-profile-settings" className="dropdown-item">
                             <span
                                 className="badge bg-success-subtle text-success mt-1 float-end">New</span><i
                                     className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span

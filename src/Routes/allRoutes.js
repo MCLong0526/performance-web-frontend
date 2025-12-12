@@ -248,6 +248,8 @@ import CustomLogin from "../pages/CustomAuth/CustomLogin";
 import CustomRegister from "../pages/CustomAuth/CustomRegister";
 import CustomLogout from "../pages/CustomAuth/CustomLogout";
 
+import LeaveCalendar from "../pages/Leave/LeaveCalendar";
+
 const authProtectedRoutes = [
   { path: "/dashboard-analytics", component: <DashboardAnalytics /> },
   { path: "/dashboard-crm", component: <DashboardCrm /> },
@@ -256,7 +258,7 @@ const authProtectedRoutes = [
   { path: "/dashboard-crypto", component: <DashboardCrypto /> },
   { path: "/dashboard-projects", component: <DashboardProject /> },
   { path: "/dashboard-nft", component: <DashboardNFT /> },
-  { path: "/dashboard-job", component : <DashboardJob /> },
+  { path: "/dashboard-job", component: <DashboardJob /> },
   { path: "/dashboard-blog", component: <DashboardBlog /> },
 
   { path: "/apps-calendar", component: <Calendar /> },
@@ -450,7 +452,7 @@ const authProtectedRoutes = [
   { path: "/apps-job-new", component: <NewJobs /> },
   { path: "/apps-job-companies-lists", component: <CompaniesList /> },
   { path: "/apps-job-categories", component: <JobCategories /> },
-  { path: "/apps-api-key", component: <Apikeys/> },
+  { path: "/apps-api-key", component: <Apikeys /> },
 
 
   //User Profile
@@ -460,20 +462,22 @@ const authProtectedRoutes = [
   {
     path: "/users",
     component: <UserList />
-  }, 
+  },
+
+  { path: "/leave-calendar", component: <LeaveCalendar /> },
 
   // this route should be at the end of all other routes
   // eslint-disable-next-line react/display-name
   {
     path: "/",
     exact: true,
-    component: <Navigate to="/dashboard" />,
+    component: <Navigate to="/login" />,
   },
   { path: "*", component: <Navigate to="/dashboard" /> },
 
 
 
- 
+
 ];
 
 const publicRoutes = [
@@ -481,7 +485,7 @@ const publicRoutes = [
   { path: "/forgot-password", component: <ForgetPasswordPage /> },
   // { path: "/register", component: <Register /> },
   { path: "/dashboard", component: <DashboardProject /> },
-  
+
 
   //AuthenticationInner pages
   { path: "/auth-signin-basic", component: <BasicSignIn /> },
@@ -507,7 +511,7 @@ const publicRoutes = [
 
   { path: "/landing", component: <OnePage /> },
   { path: "/nft-landing", component: <NFTLanding /> },
-  { path : "/job-landing" , component: <JobLanding /> },
+  { path: "/job-landing", component: <JobLanding /> },
 
   { path: "/auth-pass-change-basic", component: <BasicPasswCreate /> },
   { path: "/auth-pass-change-cover", component: <CoverPasswCreate /> },
@@ -516,9 +520,9 @@ const publicRoutes = [
 
   // Customlogin
   { path: "/login", component: <CustomLogin /> },
-  { path: "/register", component: <CustomRegister />},
+  { path: "/register", component: <CustomRegister /> },
   { path: "/logout", component: <CustomLogout /> },
-  
+
 
 ];
 

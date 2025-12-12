@@ -30,12 +30,12 @@ const showErrorToast = (msg) =>
   });
 
 const showSuccessToast = (msg) =>
-    toast.success(msg, {
+  toast.success(msg, {
     ...toastConfig,
     className: 'bg-success text-white',
     icon: <i className="ri-checkbox-circle-line align-middle me-2"></i>
-    });
-  
+  });
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -65,13 +65,25 @@ const Login = () => {
 
         localStorage.setItem("user", JSON.stringify(userData));
 
+        // 🛑 CRITICAL FIX: Extract the JWT token and save it under the key 'jwtToken'
+        const jwtToken = response.data.token;
+
+        if (jwtToken) {
+          localStorage.setItem("jwtToken", jwtToken);
+        } else {
+          // Handle case where token is missing in response
+          throw new Error("Login successful, but token not received from server.");
+        }
+
         // Clear any existing toasts before showing a new one
         toast.dismiss();
 
         showSuccessToast("Login successful! Welcome back 👋");
-        navigate("/users");
 
-
+        // Add a small delay to ensure toast is visible before navigation
+        setTimeout(() => {
+          navigate("/users");
+        }, 500);
       } catch (error) {
         console.error("Login Error:", error);
 
