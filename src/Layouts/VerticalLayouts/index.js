@@ -5,8 +5,8 @@ import withRouter from "../../Components/Common/withRouter";
 import { Collapse } from 'reactstrap';
 
 // Import Data
-// import navdata from "../LayoutMenuData";
-import navdata from "../MyMenuData";
+import navdata from "../LayoutMenuData";
+// import navdata from "../MyMenuData";
 
 //i18n
 import { withTranslation } from "react-i18next";

@@ -24,14 +24,14 @@ const API_URL = "http://localhost:8080/api/users";
 
 // Configuration for success/error toasts
 const toastConfig = {
-    position: "top-right",
-    autoClose: 3000,
-    hideProgressBar: true,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    closeButton: false,
-    progress: undefined,
+  position: "top-right",
+  autoClose: 3000,
+  hideProgressBar: true,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  closeButton: false,
+  progress: undefined,
 };
 
 // --- HELPER FUNCTIONS FOR BADGE RENDERING ---
@@ -42,7 +42,7 @@ const getRoleBadge = (role) => {
     'BOSS': { bg: 'bg-primary-subtle', text: 'text-primary' },
     'LEADER': { bg: 'bg-info-subtle', text: 'text-info' },
     'PROGRAMMER': { bg: 'bg-success-subtle', text: 'text-success' },
-    'DEFAULT': { bg: 'bg-secondary-subtle', text: 'text-secondary' }, 
+    'DEFAULT': { bg: 'bg-secondary-subtle', text: 'text-secondary' },
   };
   const { bg, text } = badgeMap[role] || badgeMap['DEFAULT'];
   return (
@@ -62,7 +62,7 @@ const getStatusBadge = (status) => {
   const bgClass = badgeMap[status] || badgeMap['DEFAULT'];
   return (
     <span className={`badge rounded-pill border border-${bgClass} text-${bgClass}`}>
-     {status}
+      {status}
     </span>
 
   );
@@ -77,8 +77,8 @@ const UserList = () => {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    role: "PROGRAMMER", 
-    status: "ACTIVE",  
+    role: "PROGRAMMER",
+    status: "ACTIVE",
     phoneNumber: "",
   });
 
@@ -91,16 +91,16 @@ const UserList = () => {
   // Toast functions
   const showSuccessToast = (msg) =>
     toast.success(msg, {
-        ...toastConfig,
-        className: 'bg-success text-white',
-        icon: <i className="ri-check-double-line align-middle me-2"></i>
+      ...toastConfig,
+      className: 'bg-success text-white',
+      icon: <i className="ri-check-double-line align-middle me-2"></i>
     });
 
   const showErrorToast = (msg) =>
     toast.error(msg, {
-        ...toastConfig,
-        className: 'bg-danger text-white',
-        icon: <i className="ri-error-warning-line align-middle me-2"></i>
+      ...toastConfig,
+      className: 'bg-danger text-white',
+      icon: <i className="ri-error-warning-line align-middle me-2"></i>
     });
 
   // ---------------- LOAD USERS ----------------
@@ -114,7 +114,7 @@ const UserList = () => {
       showErrorToast(`Load Error: ${err.message || "Unable to fetch users from backend."}`);
     }
   };
-  
+
 
   useEffect(() => {
     loadUsers();
@@ -123,12 +123,12 @@ const UserList = () => {
   // ---------------- ADD / EDIT USER ----------------
   const openAdd = () => {
     setSelectedUser(null);
-    setForm({ 
-        name: "", 
-        email: "", 
-        role: "PROGRAMMER", 
-        status: "ACTIVE", 
-        phoneNumber: "" 
+    setForm({
+      name: "",
+      email: "",
+      role: "PROGRAMMER",
+      status: "ACTIVE",
+      phoneNumber: ""
     });
     setModalOpen(true);
   };
@@ -151,38 +151,38 @@ const UserList = () => {
       let res;
       if (selectedUser) {
         const updateData = {
-            name: form.name,
-            email: form.email,
-            role: form.role,
-            status: form.status,
-            phoneNumber: form.phoneNumber,
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          status: form.status,
+          phoneNumber: form.phoneNumber,
         };
         res = await axios.put(`${API_URL}/${selectedUser.id}`, updateData);
       } else {
         res = await axios.post(API_URL, form);
       }
-      
+
       setModalOpen(false);
       // Use the success message from the response body
-      showSuccessToast(res.msg); 
+      showSuccessToast(res.msg);
       loadUsers();
     } catch (e) {
-        console.error("Full Error Object:", e); 
+      console.error("Full Error Object:", e);
 
-        let errorMessage = "Failed to save user. Please check your inputs.";
-        
-        if (e.response && e.response.data) {
-            // Priority 1: Specific validation error message (from @ExceptionHandler 400)
-            if (e.response.data.error) {
-                errorMessage = e.response.data.error; 
-            } 
-            // Priority 2: General message (from 404, etc., returned by controller helper)
-            else if (e.response.data.msg) {
-                errorMessage = e.response.data.msg;
-            }
+      let errorMessage = "Failed to save user. Please check your inputs.";
+
+      if (e.response && e.response.data) {
+        // Priority 1: Specific validation error message (from @ExceptionHandler 400)
+        if (e.response.data.error) {
+          errorMessage = e.response.data.error;
         }
-        
-        showErrorToast(errorMessage);
+        // Priority 2: General message (from 404, etc., returned by controller helper)
+        else if (e.response.data.msg) {
+          errorMessage = e.response.data.msg;
+        }
+      }
+
+      showErrorToast(errorMessage);
     }
   };
 
@@ -197,15 +197,15 @@ const UserList = () => {
       const res = await axios.delete(`${API_URL}/${selectedUser.id}`);
       setDeleteModal(false);
       // Use the success message from the response body
-      showSuccessToast(res.msg); 
+      showSuccessToast(res.msg);
       loadUsers();
     } catch (e) {
       console.error("Delete error:", e);
       let errorMessage = "Failed to delete user.";
-      
+
       if (e.response && e.response.data && e.response.data.msg) {
-          // Use the message field (e.g., "User not found or already soft-deleted.")
-          errorMessage = e.response.data.msg;
+        // Use the message field (e.g., "User not found or already soft-deleted.")
+        errorMessage = e.response.data.msg;
       }
       showErrorToast(errorMessage);
     }
@@ -215,7 +215,7 @@ const UserList = () => {
     <div className="page-content">
       <Container fluid>
         <BreadCrumb title="User Management" pageTitle="Users" />
-        
+
         <Card>
           <CardHeader>
             <h4 className="card-title mb-0">Users</h4>
@@ -232,10 +232,10 @@ const UserList = () => {
                     <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Role</th> 
+                    <th>Role</th>
                     <th>Phone</th>
                     <th>Status</th>
-                    <th>Created By / Time</th>
+                    <th>Create Time</th>
                     <th>Last Updated</th>
                     <th width="140px">Action</th>
                   </tr>
@@ -248,16 +248,15 @@ const UserList = () => {
                         <td>{u.id}</td>
                         <td>{u.name}</td>
                         <td>{u.email}</td>
-                        <td>{getRoleBadge(u.role)}</td> 
+                        <td>{getRoleBadge(u.role)}</td>
                         <td>{u.phoneNumber || 'N/A'}</td>
                         <td>{getStatusBadge(u.status)}</td>
                         <td>
-                            {u.createdBy || 'N/A'}
-                            <br/><small className="text-muted">{formatDateTime(u.createTime)}</small>
+                          {formatDateTime(u.createTime)}
                         </td>
                         <td>
-                            {u.updatedBy || 'N/A'}
-                            <br/><small className="text-muted">{formatDateTime(u.updateTime)}</small>
+                          {u.updatedBy || 'N/A'}
+                          <br /><small className="text-muted">{formatDateTime(u.updateTime)}</small>
                         </td>
                         <td>
                           <div className="d-flex gap-2">
@@ -299,21 +298,21 @@ const UserList = () => {
           </ModalHeader>
           <ModalBody>
             <Row>
-                <Col md={6}>
-                    <label>Name</label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    />
-                </Col>
-                <Col md={6}>
-                    <label>Email</label>
-                    <Input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    />
-                </Col>
+              <Col md={6}>
+                <label>Name</label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </Col>
+              <Col md={6}>
+                <label>Email</label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </Col>
             </Row>
 
             <label className="mt-3">Phone Number</label>
@@ -324,37 +323,37 @@ const UserList = () => {
             />
 
             <Row className="mt-3">
-                <Col md={6}>
-                    <label>Role</label>
-                    <Input
-                      type="select"
-                      value={form.role}
-                      onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    >
-                        <option value="ADMIN">Admin</option>
-                        <option value="BOSS">Boss</option>
-                        <option value="LEADER">Leader</option>
-                        <option value="PROGRAMMER">Programmer</option>
-                    </Input>
-                </Col>
-                <Col md={6}>
-                    <label>Status</label>
-                    <Input
-                      type="select"
-                      value={form.status}
-                      onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    >
-                        <option value="ACTIVE">Active</option>
-                        <option value="DEACTIVATE">Deactivate</option>
-                    </Input>
-                </Col>
+              <Col md={6}>
+                <label>Role</label>
+                <Input
+                  type="select"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="BOSS">Boss</option>
+                  <option value="LEADER">Leader</option>
+                  <option value="PROGRAMMER">Programmer</option>
+                </Input>
+              </Col>
+              <Col md={6}>
+                <label>Status</label>
+                <Input
+                  type="select"
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="DEACTIVATE">Deactivate</option>
+                </Input>
+              </Col>
             </Row>
 
             {selectedUser && (
-                <div className="mt-3 border-top pt-3">
-                    <p className="mb-1 text-muted"><small>Created By: <b>{selectedUser.createdBy}</b> on {formatDateTime(selectedUser.createTime)}</small></p>
-                    {selectedUser.updatedBy && <p className="mb-0 text-muted"><small>Last Updated By: <b>{selectedUser.updatedBy}</b> on {formatDateTime(selectedUser.updateTime)}</small></p>}
-                </div>
+              <div className="mt-3 border-top pt-3">
+                <p className="mb-1 text-muted"><small>Created By: <b>{selectedUser.createdBy}</b> on {formatDateTime(selectedUser.createTime)}</small></p>
+                {selectedUser.updatedBy && <p className="mb-0 text-muted"><small>Last Updated By: <b>{selectedUser.updatedBy}</b> on {formatDateTime(selectedUser.updateTime)}</small></p>}
+              </div>
             )}
           </ModalBody>
 
@@ -384,8 +383,8 @@ const UserList = () => {
           </ModalFooter>
         </Modal>
       </Container>
-      
-      <ToastContainer /> 
+
+
     </div>
   );
 };
