@@ -75,6 +75,8 @@ const Login = () => {
           throw new Error("Login successful, but token not received from server.");
         }
 
+        localStorage.setItem("currentUserId", userData.id);
+
         // Clear any existing toasts before showing a new one
         toast.dismiss();
 

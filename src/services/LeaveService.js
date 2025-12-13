@@ -7,15 +7,26 @@ const BASE_PATH = `/api/leave`;
 /* =====================
    Helpers
 ===================== */
+const getCurrentUserId = () => {
+    // 🛑 IMPLEMENTATION POINT: You MUST ensure your login process stores the user ID 
+    // in localStorage under the key "currentUserId".
+    const userId = localStorage.getItem("currentUserId");
+    if (!userId) {
+        // In a real application, you would log out or redirect here.
+        throw new Error("User ID is unavailable. Please log in.");
+    }
+    return userId;
+};
+
 const getClassByType = (type) => {
     switch (type) {
         case "SICK":
-            return "bg-danger";
+            return "bg-danger-subtle text-danger";
         case "UNPAID":
-            return "bg-warning";
+            return "bg-warning-subtle text-warning";
         case "ANNUAL":
         default:
-            return "bg-primary";
+            return "bg-success-subtle text-success";
     }
 };
 
@@ -35,12 +46,14 @@ const mapToFrontend = (leave) => ({
    APIs
 ===================== */
 export const getLeaveRequests = async () => {
-    const res = await api.get(`${BASE_PATH}/user/${CURRENT_USER_ID}`);
+    const userId = getCurrentUserId();
+    const res = await api.get(`${BASE_PATH}/user/${userId}`);
     return (res.data || []).map(mapToFrontend);
 };
 
 export const createLeaveRequest = async (payload) => {
-    const res = await api.post(`${BASE_PATH}/user/${CURRENT_USER_ID}`, payload);
+    const userId = getCurrentUserId();
+    const res = await api.post(`${BASE_PATH}/user/${userId}`, payload);
     return mapToFrontend(res.data);
 };
 
