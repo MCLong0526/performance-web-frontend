@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import UpcommingLeave from "./UpcommingLeave";
 import { getUpcomingLeave } from "../../services/LeaveService";
 import { Card, CardBody, Spinner, Alert } from "reactstrap";
+import SimpleBar from "simplebar-react";
 import PropTypes from "prop-types";
 
 function UpcommingLeaveList({ refreshTrigger }) {
@@ -49,18 +50,22 @@ function UpcommingLeaveList({ refreshTrigger }) {
     }
 
     return (
-        <div className="upcomming-leave-list">
-            {upcomingLeaves.map((leave) => {
-                if (!leave || !leave.id) return null;
+        <React.Fragment>
+            <SimpleBar style={{ maxHeight: "290px" }} className="px-2">
+                <div className="upcomming-leave-list">
+                    {upcomingLeaves.map((leave) => {
+                        if (!leave || !leave.id) return null;
 
-                return (
-                    <UpcommingLeave
-                        key={leave.id}
-                        leave={leave}
-                    />
-                );
-            })}
-        </div>
+                        return (
+                            <UpcommingLeave
+                                key={leave.id}
+                                leave={leave}
+                            />
+                        );
+                    })}
+                </div>
+            </SimpleBar>
+        </React.Fragment>
     );
 }
 

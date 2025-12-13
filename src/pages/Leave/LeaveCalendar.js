@@ -2,12 +2,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
+import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import bootstrapPlugin from "@fullcalendar/bootstrap";
 import FeatherIcon from "feather-icons-react";
 import * as Yup from "yup";
 import { useFormik } from "formik";
+import Select from "react-select";
 
 import {
     Container,
@@ -74,15 +75,21 @@ const formatLeaveDate = (dateStr) => {
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
+const leaveTypeOptions = [
+    { label: "Annual Leave", value: "ANNUAL" },
+    { label: "Sick Leave", value: "SICK" },
+    { label: "Unpaid Leave", value: "UNPAID" },
+];
+
 // =========================================================================
 // 🛑 Component 1: Leave Request Form (For new requests) - UPDATED
 // =========================================================================
 
-const LeaveRequestForm = ({ onSave, onClose }) => {
+const LeaveRequestForm = ({ onSave, onClose, initialValues }) => {
     const [formData, setFormData] = useState({
-        dateRange: "",
+        dateRange: initialValues?.dateRange || "",
         reason: "",
-        type: "ANNUAL",
+        type: initialValues?.type || "ANNUAL",
     });
     const [loading, setLoading] = useState(false);
 
@@ -152,17 +159,13 @@ const LeaveRequestForm = ({ onSave, onClose }) => {
 
             <FormGroup>
                 <Label>Leave Type</Label>
-                <Input
-                    type="select"
-                    value={formData.type}
-                    onChange={(e) =>
-                        setFormData({ ...formData, type: e.target.value })
+                <Select
+                    value={leaveTypeOptions.find((opt) => opt.value === formData.type)}
+                    onChange={(opt) =>
+                        setFormData({ ...formData, type: opt.value })
                     }
-                >
-                    <option value="ANNUAL">Annual Leave</option>
-                    <option value="SICK">Sick Leave</option>
-                    <option value="UNPAID">Unpaid Leave</option>
-                </Input>
+                    options={leaveTypeOptions}
+                />
             </FormGroup>
 
             <FormGroup>
@@ -264,6 +267,8 @@ const EventDetailsForm = ({ event, onSave, onDelete, onCancel }) => {
             validation.setFieldValue('endDate', toLocalDate(selectedDates[1]));
         }
     };
+
+
 
     const handleDelete = async () => {
         if (!window.confirm("Are you sure you want to delete this leave request?")) return;
@@ -374,16 +379,12 @@ const EventDetailsForm = ({ event, onSave, onDelete, onCancel }) => {
 
             <FormGroup>
                 <Label>Leave Type</Label>
-                <Input
-                    type="select"
+                <Select
                     name="type"
-                    value={validation.values.type}
-                    onChange={validation.handleChange}
-                >
-                    <option value="ANNUAL">Annual Leave</option>
-                    <option value="SICK">Sick Leave</option>
-                    <option value="UNPAID">Unpaid Leave</option>
-                </Input>
+                    value={leaveTypeOptions.find((opt) => opt.value === validation.values.type)}
+                    onChange={(opt) => validation.setFieldValue("type", opt.value)}
+                    options={leaveTypeOptions}
+                />
             </FormGroup>
 
             <FormGroup>
@@ -415,9 +416,29 @@ function LeaveCalendar() {
     const [detailsModal, setDetailsModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [initialFormValues, setInitialFormValues] = useState(null);
+
+    useEffect(() => {
+        const draggableEl = document.getElementById("external-events");
+        if (draggableEl) {
+            new Draggable(draggableEl, {
+                itemSelector: ".external-event",
+                eventData: function (eventEl) {
+                    return {
+                        title: eventEl.innerText,
+                        start: new Date(),
+                        className: eventEl.getAttribute("data-class"),
+                    };
+                },
+            });
+        }
+    }, []);
 
     // Standardized Modal Toggles
-    const openCreateModal = () => setCreateModal(true);
+    const openCreateModal = () => {
+        setInitialFormValues(null); // Reset values for manual open
+        setCreateModal(true);
+    };
     const closeCreateModal = () => setCreateModal(false);
 
     const openDetailsModal = () => setDetailsModal(true);
@@ -426,7 +447,17 @@ function LeaveCalendar() {
     const fetchLeaves = useCallback(async () => {
         try {
             const data = await getLeaveRequests();
-            setEvents(data);
+            // FullCalendar end date is exclusive, so we need to add +1 day to the end date
+            // so that the calendar renders the event up to the end of the intended day.
+            const eventsWithInclusiveEndDate = data.map((evt) => {
+                if (!evt.end) return evt;
+                const d = new Date(evt.end);
+                d.setDate(d.getDate() + 1);
+                // Ensure YYYY-MM-DD format
+                const newEnd = d.toISOString().split("T")[0];
+                return { ...evt, end: newEnd };
+            });
+            setEvents(eventsWithInclusiveEndDate);
         } catch (e) {
             showErrorToast(e.message);
             setEvents([]);
@@ -463,6 +494,91 @@ function LeaveCalendar() {
         openDetailsModal(); // Use the open function
     };
 
+    const handleEventDrop = async (info) => {
+        const { event, revert } = info;
+
+        try {
+            const start = event.start;
+            // FullCalendar end is exclusive, usually need to subtract 1 day for inclusive backend
+            let end = event.end;
+            if (!end) {
+                end = start; // If no end (single day), end is same as start
+            } else {
+                // Determine if we need to subtract based on FullCalendar behavior
+                // Usually if it's an all-day event spanning multiple days, 'end' is 00:00 of next day.
+                // We want inclusive end date.
+                const d = new Date(end);
+                d.setDate(d.getDate() - 1);
+                end = d;
+            }
+
+            const toLocalDate = (d) => {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            };
+
+            const startDate = toLocalDate(start);
+            const endDate = toLocalDate(end);
+            const duration = calculateDuration(startDate, endDate);
+
+            const payload = {
+                id: event.id, // Assuming ID is directly on event or need to get from extendedProps
+                type: event.extendedProps.type,
+                reason: event.extendedProps.reason,
+                status: event.extendedProps.status,
+                startDate,
+                endDate,
+                duration,
+            };
+
+            // ID might be string or number, ensure we have it
+            if (!event.id) throw new Error("Event ID missing");
+
+            await updateLeaveRequest(event.id, payload);
+            showSuccessToast("Leave request rescheduled successfully.");
+            setRefreshTrigger((v) => v + 1); // Refresh lists
+        } catch (err) {
+            showErrorToast("Failed to reschedule: " + err.message);
+            revert();
+        }
+    };
+
+    const onDrop = (info) => {
+        const { date, draggedEl } = info;
+        const type = draggedEl.getAttribute("data-type");
+
+        // Format date as "d M, Y" for Flatpickr compatibility (e.g., "14 Dec, 2025 to 14 Dec, 2025")
+        // Flatpickr range mode expects "start to end" string
+        const d = new Date(date);
+        const formattedDate = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        const dateRange = `${formattedDate} to ${formattedDate}`;
+
+        setInitialFormValues({
+            dateRange: dateRange,
+            type: type || "ANNUAL"
+        });
+        setCreateModal(true);
+    };
+
+    const renderEventContent = (eventInfo) => {
+        const { status } = eventInfo.event.extendedProps;
+        let iconClass = "mdi-clock-outline"; // Default Pending
+
+        if (status === "APPROVED") {
+            iconClass = "mdi-check-circle-outline";
+        } else if (status === "REJECTED") {
+            iconClass = "mdi-close-circle-outline";
+        }
+
+        return (
+            <div className="d-flex align-items-center overflow-hidden text-truncate">
+                <i className={`mdi ${iconClass} me-1`}></i>
+                <div className="fc-event-title text-truncate">
+                    {eventInfo.event.title}
+                </div>
+            </div>
+        );
+    };
+
     const handleUpdate = () => {
         closeCreateModal(); // Close create modal if open
         closeDetailsModal(); // Close details modal if open
@@ -485,11 +601,14 @@ function LeaveCalendar() {
                 right: "dayGridMonth,dayGridWeek,dayGridDay,listWeek",
             },
             initialView: "dayGridMonth", // 🔥 REQUIRED
-            editable: false,
+            editable: true,
             selectable: true,
-            droppable: false,
+            droppable: true,
             events: events,
             eventClick: handleEventClick,
+            eventDrop: handleEventDrop,
+            drop: onDrop,
+            eventContent: renderEventContent, // Custom renderer
             eventClassNames: ({ event }) => [
                 "bg-subtle",
                 event.extendedProps.className,
@@ -510,13 +629,45 @@ function LeaveCalendar() {
 
                     <Row>
                         <Col xl={3}>
-                            <Button
-                                color="primary"
-                                className="w-100 mb-4"
-                                onClick={openCreateModal}
-                            >
-                                <i className="mdi mdi-plus me-1"></i> New Leave Request
-                            </Button>
+                            <Card className="card-h-100">
+                                <CardBody>
+                                    <Button
+                                        color="primary"
+                                        className="w-100 mb-4"
+                                        onClick={openCreateModal}
+                                    >
+                                        <i className="mdi mdi-plus me-1"></i> New Leave Request
+                                    </Button>
+
+                                    <div id="external-events">
+                                        <p className="text-muted">Drag and drop to create leave</p>
+                                        <div
+                                            className="bg-success-subtle external-event fc-event text-success p-2 mb-2 cursor-pointer"
+                                            data-class="bg-success-subtle text-success"
+                                            data-type="ANNUAL"
+                                        >
+                                            <i className="mdi mdi-checkbox-blank-circle font-size-11 me-2" />
+                                            Annual Leave
+                                        </div>
+                                        <div
+                                            className="bg-danger-subtle external-event fc-event text-danger p-2 mb-2 cursor-pointer"
+                                            data-class="bg-danger-subtle text-danger"
+                                            data-type="SICK"
+                                        >
+                                            <i className="mdi mdi-checkbox-blank-circle font-size-11 me-2" />
+                                            Sick Leave
+                                        </div>
+                                        <div
+                                            className="bg-warning-subtle external-event fc-event text-warning p-2 mb-2 cursor-pointer"
+                                            data-class="bg-warning-subtle text-warning"
+                                            data-type="UNPAID"
+                                        >
+                                            <i className="mdi mdi-checkbox-blank-circle font-size-11 me-2" />
+                                            Unpaid Leave
+                                        </div>
+                                    </div>
+                                </CardBody>
+                            </Card>
 
                             <h5 className="mb-1">Upcoming Leave</h5>
                             <UpcommingLeaveList refreshTrigger={refreshTrigger} />
@@ -548,6 +699,7 @@ function LeaveCalendar() {
                     <LeaveRequestForm
                         onSave={handleUpdate}
                         onClose={closeCreateModal}
+                        initialValues={initialFormValues}
                     />
                 </ModalBody>
             </Modal>

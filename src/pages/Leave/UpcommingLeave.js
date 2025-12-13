@@ -18,19 +18,6 @@ function UpcommingLeave({ leave }) {
         }
     };
 
-    // Color by leave TYPE
-    const getClassByType = (type) => {
-        switch (type) {
-            case "SICK":
-                return "danger";   // red
-            case "UNPAID":
-                return "warning";  // orange
-            case "ANNUAL":
-            default:
-                return "primary";  // blue
-        }
-    };
-
     const st_date = leave.start ? formatDate(leave.start) : null;
     const ed_date = leave.end ? formatDate(leave.end) : null;
 
@@ -39,14 +26,21 @@ function UpcommingLeave({ leave }) {
         dateDisplay = `${st_date} to ${ed_date}`;
     }
 
-    const typeColor = getClassByType(leave.type);
+    // leave.className contains "bg-*-subtle text-*", so we just apply it
+    // We might need to split it if we want icon color separate, but usually
+    // the service returns "bg-success-subtle text-success".
+    // For the icon, we can extract the text color part or just map it.
+    // Actually, let's use the text color from the class string for the icon.
+
+    // Simple parsing since we know the format "bg-X-subtle text-X"
+    const textColorClass = leave.className ? leave.className.split(' ')[1] : 'text-primary';
 
     return (
         <Card className="mb-3">
             <CardBody>
                 <div className="d-flex mb-3">
                     <div className="flex-grow-1">
-                        <i className={`mdi mdi-checkbox-blank-circle me-2 text-${typeColor}`} />
+                        <i className={`mdi mdi-checkbox-blank-circle me-2 ${textColorClass}`} />
                         <span className="fw-medium">{dateDisplay}</span>
                     </div>
                 </div>
@@ -55,8 +49,22 @@ function UpcommingLeave({ leave }) {
                     {leave.reason || "Leave"}
                 </h6>
 
-                <p className="text-muted mb-0">
+                <p className="text-muted mb-1">
                     Duration: <strong>{leave.duration} days</strong>
+                </p>
+
+                <p className="text-muted mb-0">
+                    {(() => {
+                        switch (leave.status) {
+                            case "APPROVED":
+                                return <><i className="mdi mdi-check-circle-outline text-success me-1"></i> Approved</>;
+                            case "REJECTED":
+                                return <><i className="mdi mdi-close-circle-outline text-danger me-1"></i> Rejected</>;
+                            case "PENDING":
+                            default:
+                                return <><i className="mdi mdi-clock-outline text-warning me-1"></i> Pending</>;
+                        }
+                    })()}
                 </p>
             </CardBody>
         </Card>
